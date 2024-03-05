@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ToDo App</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body>
+    <h1>ToDo List</h1>
+    <input type="text" id="todoInput" placeholder="Add a new todo...">
+    <button onclick="addTodo()">Add Todo</button>
+    <h2>未完了のToDo</h2>
+    <ul id="incompleteTodos"></ul>
+    <h2>完了したToDo</h2>
+    <ul id="completedTodos"></ul>
+
+    <script>
+        const apiUrl = '/todos';
+
+        async function fetchTodos() {
+            const response = await axios.get(apiUrl);
+            const todos = response.data;
+            const incompleteList = document.getElementById('incompleteTodos');
+            const completedList = document.getElementById('completedTodos');
+            incompleteList.innerHTML = ''; // Clear current todos
+            completedList.innerHTML = ''; // Clear current todos
+            todos.forEach(todo => {
+                let li = document.createElement('li');
+                li.textContent = todo.title + ' ';
+
+                // 完了または未完了の状態を切り替えるボタン
+                let toggleBtn = document.createElement('button');
+                toggleBtn.textContent = todo.completed ? '未完了に戻す' : 'Complete';
+                toggleBtn.onclick = function() { toggleCompletion(todo.id, todo.completed); };
+                li.appendChild(toggleBtn);
+
+                // 削除ボタン
+                let deleteBtn = document.createElement('button');
+                deleteBtn.textContent = 'Delete';
+                deleteBtn.onclick = function() { deleteTodo(todo.id); };
+                li.appendChild(deleteBtn);
+
+                if (todo.completed) {
+                    completedList.appendChild(li);
+                } else {
+                    incompleteList.appendChild(li);
+                }
+            });
+        }
+
+        async function addTodo() {
+            const input = document.getElementById('todoInput');
+            const title = input.value;
+            if (title) {
+                await axios.post(apiUrl, { title: title, completed: false });
+                input.value = ''; // Clear input field
+                fetchTodos(); // Refresh the list
+            }
+        }
+
+        async function deleteTodo(id) {
+            await axios.delete(`${apiUrl}/${id}`);
+            fetchTodos(); // Refresh the list
+        }
+
+        async function toggleCompletion(id, completed) {
+            const path = completed ? '/incomplete' : '/complete';
+            await axios.patch(`${apiUrl}/${id}${path}`);
+            fetchTodos(); // Refresh the list
+        }
+
+        // Initial fetch of todos
+        fetchTodos();
+    </script>
+</body>
+</html>
